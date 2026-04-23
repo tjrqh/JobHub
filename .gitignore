@@ -1,0 +1,23 @@
+# 🔒 Security & Environment
+.env
+.env.local
+.env.secret
+
+# 📦 Python & Virtual Environment
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+build/
+dist/
+
+# 🛠️ uv & Package Manager
+.pdm-python
+.python-version
+.uv/
+
+# 🖥️ OS Specific
+.DS_Store
+Thumbs.db
