@@ -23,34 +23,80 @@ class SaraminCrawler(BaseCrawler):
         self.source_name = "saramin"
 
     def build_search_url(self, keyword: str = "", **filters) -> str:
-        """사람인 검색 URL 생성"""
         params = []
 
         if keyword:
             params.append(f"searchword={quote_plus(keyword)}")
             params.append("searchType=search")
 
-        # 경력 파라미터
+        # ✅ 직무
+        category = filters.get("category")
+        category_map = {
+            "전체": "2",
+            "웹개발": "87",
+            "SW개발": "2",
+            "앱개발": "86",
+            "데이터분석": "82",
+            "AI/ML": "109,181",
+            "서버/백엔드": "84",
+            "프론트엔드": "92",
+            "DevOps": "146",
+            "QA/테스트": "99",
+            "보안": "90",
+            "DBA": "95",
+            "네트워크": "104"
+        }
+        if category in category_map:
+            if category in ["SW개발", "전체"]:
+                params.append(f"cat_mcls={category_map[category]}")
+            else:
+                params.append(f"cat_kewd={category_map[category]}")
+
+        # 경력
         exp = filters.get("experience", "전체")
         exp_map = {
-            "신입": "1", "1년": "2", "2년": "3",
-            "3년": "4", "5년": "6", "7년": "8", "10년 이상": "11"
+            "신입": "1",
+            "1년": "1",
+            "2년": "2",
+            "3년": "3",
+            "5년": "5",
+            "7년": "7",
+            "10년 이상": "10"
         }
+
         if exp in exp_map:
-            params.append(f"career={exp_map[exp]}")
+            code = exp_map[exp]
+            if exp == "신입":
+                params.append(f"exp_cd={code}")
+            else:
+                params.append(f"exp_cd={1}")
+                params.append(f"exp_min={1}")
+                params.append(f"exp_max={code}")
 
-        # 학력 파라미터
+        # 학력
         edu = filters.get("education", "전체")
-        edu_map = {
-            "학력무관": "0", "고졸": "4", "초대졸": "5",
-            "대졸": "6", "석사": "7", "박사": "8"
-        }
-        if edu in edu_map:
-            params.append(f"education={edu_map[edu]}")
 
-        # 지역 파라미터
-        region = filters.get("region", "전체")
-        region_map = {
+        edu_map = {
+            "학력무관": "y",
+            "고졸": "9",
+            "초대졸": "10",
+            "대졸": "11",
+            "석사": "12",
+            "박사": "6"
+        }
+
+        if edu in edu_map:
+            code = edu_map[edu]
+
+            if edu == "박사":
+                params.append(f"edu_min={code}")   # ✅ 박사만 min
+            elif edu == "학력무관":
+                params.append(f"edu_none={code}")       # 학력무관
+            else:
+                params.append(f"edu_max={code}")   # ✅ 나머지는 max
+        # 지역
+        location = filters.get("location", "전체")
+        location_map = {
             "서울": "101000", "경기": "102000", "인천": "108000",
             "부산": "106000", "대구": "104000", "광주": "103000",
             "대전": "105000", "울산": "107000", "세종": "118000",
@@ -58,8 +104,8 @@ class SaraminCrawler(BaseCrawler):
             "전북": "112000", "전남": "113000", "경북": "114000",
             "경남": "115000", "제주": "116000"
         }
-        if region in region_map:
-            params.append(f"loc_mcd={region_map[region]}")
+        if location in location_map:
+            params.append(f"loc_mcd={location_map[location]}")
 
         param_str = "&".join(params)
         return f"{self.BASE_URL}/zf_user/search/recruit?{param_str}"

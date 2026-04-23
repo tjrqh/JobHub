@@ -1,0 +1,15 @@
+[project]
+name = "jobflow"
+version = "0.1.0"
+description = "Job Scraping & Automation System"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "selenium",
+    "webdriver-manager",
+    "streamlit",
+    "pandas",
+    "beautifulsoup4",
+    "python-dotenv",
+    "apscheduler"
+]

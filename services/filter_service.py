@@ -6,7 +6,6 @@ logger = logging.getLogger(__name__)
 
 
 class FilterService:
-    """채용 공고 필터링 서비스"""
 
     @staticmethod
     def filter_jobs(
@@ -16,49 +15,66 @@ class FilterService:
         experience: str = "전체",
         education: str = "전체",
         tech_stacks: List[str] = None,
-        region: str = "전체"
+        location: str = "전체"
     ) -> List[JobPosting]:
-        """조건에 맞는 공고만 필터링"""
+
         filtered = []
+        logger.info(f"필터링 프로세스 시작: 총 {len(jobs)}개 대상")
+        logger.info(f"설정된 필터 - 키워드: '{keyword}', 경력: '{experience}', 지역: '{location}'")
 
-        for job in jobs:
-            if job.matches_filter(
-                keyword=keyword,
-                category=category,
-                experience=experience,
-                education=education,
-                tech_stacks=tech_stacks,
-                region=region
-            ):
-                filtered.append(job)
+        # 🔥 처음 5개만 상세 정보 출력 (INFO 레벨이라 항상 보임)
+        for idx, job in enumerate(jobs):
+            try:
+                is_match = job.matches_filter(
+                    keyword=keyword,
+                    category=category,
+                    experience=experience,
+                    education=education,
+                    tech_stacks=tech_stacks,
+                    location=location
+                )
 
-        # 중복 제거 (회사명 + 제목 기준)
+                if is_match:
+                    filtered.append(job)
+
+            except Exception as e:
+                logger.error(f"[필터오류] {idx}번째 공고 처리 중 에러: {e}")
+                continue
+
+        after_filter_count = len(filtered)
+
         seen = set()
         unique = []
         for job in filtered:
-            key = f"{job.company}_{job.title}".lower().replace(" ", "")
+            clean_company = job.company.replace("(주)", "").strip()
+            clean_title = job.title.strip()
+            key = f"{clean_company}_{clean_title}".lower().replace(" ", "")
             if key not in seen:
                 seen.add(key)
                 unique.append(job)
 
-        logger.info(f"필터링 결과: {len(jobs)} → {len(unique)}개")
+        # 🔥 요약은 항상 INFO로
+        logger.info(
+            f"필터링 요약: 원본({len(jobs)}) -> "
+            f"필터통과({after_filter_count}) -> "
+            f"중복제거최종({len(unique)})"
+        )
+
+        if len(unique) == 0 and len(jobs) > 0:
+            logger.error("!!! 모든 공고가 필터링에서 탈락했습니다. !!!")
+
         return unique
 
     @staticmethod
     def remove_expired(jobs: List[JobPosting]) -> List[JobPosting]:
-        """만료된 공고 제거"""
         active = [j for j in jobs if not j.is_expired()]
-        removed = len(jobs) - len(active)
-        if removed > 0:
-            logger.info(f"만료 공고 {removed}개 제거")
+        removed_count = len(jobs) - len(active)
+        if removed_count > 0:
+            logger.info(f"만료된 공고 {removed_count}개 제거 완료")
         return active
 
     @staticmethod
-    def sort_jobs(
-        jobs: List[JobPosting],
-        sort_by: str = "latest"
-    ) -> List[JobPosting]:
-        """공고 정렬"""
+    def sort_jobs(jobs: List[JobPosting], sort_by: str = "latest") -> List[JobPosting]:
         if sort_by == "company":
             return sorted(jobs, key=lambda j: j.company)
         elif sort_by == "source":

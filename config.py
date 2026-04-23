@@ -1,3 +1,4 @@
+# config.py
 import os
 from dotenv import load_dotenv
 
@@ -25,10 +26,7 @@ class Config:
     JOB_CATEGORIES = [
         "전체", "SW개발", "웹개발", "앱개발", "데이터분석",
         "AI/ML", "서버/백엔드", "프론트엔드", "DevOps",
-        "QA/테스트", "보안", "DBA", "네트워크", "기획",
-        "디자인", "마케팅", "영업", "경영/사무", "회계/재무",
-        "인사/총무", "고객상담", "생산/제조", "물류/유통",
-        "교육", "의료/건강", "미디어/콘텐츠", "기타"
+        "QA/테스트", "보안", "DBA", "네트워크"
     ]
 
     EXPERIENCE_LEVELS = [
@@ -42,7 +40,7 @@ class Config:
     ]
 
     TECH_STACKS = [
-        "Python", "Java", "JavaScript", "TypeScript",
+        "전체","Python", "Java", "JavaScript", "TypeScript",
         "React", "Vue.js", "Angular", "Node.js",
         "Spring", "Django", "Flask", "FastAPI",
         "AWS", "Docker", "Kubernetes", "Git",
@@ -53,9 +51,33 @@ class Config:
         "Linux", "Jenkins", "Terraform", "GraphQL"
     ]
 
-    REGIONS = [
+    LOCATIONS = [
         "전체", "서울", "경기", "인천", "부산",
         "대구", "광주", "대전", "울산", "세종",
         "강원", "충북", "충남", "전북", "전남",
         "경북", "경남", "제주"
     ]
+
+    # ===== 헬퍼 메서드 =====
+    @staticmethod
+    def get_options(option_list: list, selected: str) -> list:
+        """'전체' 선택 시 나머지 모든 옵션 반환"""
+        if selected == "전체" or selected is None:
+            return [opt for opt in option_list if opt != "전체"]
+        return [selected]
+
+    @classmethod
+    def get_experience_options(cls, selected: str = "전체") -> list:
+        return cls.get_options(cls.EXPERIENCE_LEVELS, selected)
+
+    @classmethod
+    def get_location_options(cls, selected: str = "전체") -> list:
+        return cls.get_options(cls.LOCATIONS, selected)
+    
+    @classmethod
+    def get_tech_stack_options(cls, selected: str = "전체") -> list:
+        return cls.get_options(cls.TECH_STACKS, selected)
+
+    @classmethod
+    def get_category_options(cls, selected: str = "전체") -> list:
+        return cls.get_options(cls.JOB_CATEGORIES, selected)

@@ -23,57 +23,50 @@ class DailyScheduler:
         self.is_running = False
         self._thread = None
 
-    def daily_job(self):
-        """일일 크롤링 + 이메일 발송"""
-        logger.info(f"=== 일일 크롤링 시작 ({datetime.now()}) ===")
+def daily_job(self):
+    """일일 크롤링 + 이메일 발송"""
+    logger.info(f"=== 일일 크롤링 시작 ({datetime.now()}) ===")
 
-        all_jobs: List[JobPosting] = []
-        keyword = self.search_params.get("keyword", "")
+    all_jobs: List[JobPosting] = []
+    params = dict(self.search_params)  # 복사본 사용
+    keyword = params.pop("keyword", "")  # keyword 꺼내고 제거
 
-        # 각 사이트 크롤링
-        crawlers = [
-            ("사람인", SaraminCrawler()),
-            ("잡코리아", JobKoreaCrawler()),
-            ("원티드", WantedCrawler())
-        ]
+    # 각 사이트 크롤링
+    crawlers = [
+        ("사람인", SaraminCrawler()),
+        ("잡코리아", JobKoreaCrawler()),
+        ("원티드", WantedCrawler())
+    ]
 
-        for name, crawler in crawlers:
-            try:
-                logger.info(f"[{name}] 크롤링 시작")
-                jobs = crawler.run(keyword, **self.search_params)
-                all_jobs.extend(jobs)
-                logger.info(f"[{name}] {len(jobs)}개 수집")
-            except Exception as e:
-                logger.error(f"[{name}] 크롤링 실패: {e}")
+    for name, crawler in crawlers:
+        try:
+            logger.info(f"[{name}] 크롤링 시작")
+            jobs = crawler.run(keyword=keyword, **params)
+            all_jobs.extend(jobs)
+            logger.info(f"[{name}] {len(jobs)}개 수집")
+        except Exception as e:
+            logger.error(f"[{name}] 크롤링 실패: {e}")
 
-        # 필터링
-        all_jobs = FilterService.remove_expired(all_jobs)
-        all_jobs = FilterService.filter_jobs(
-            all_jobs,
-            keyword=keyword,
-            category=self.search_params.get("category", "전체"),
-            experience=self.search_params.get("experience", "전체"),
-            education=self.search_params.get("education", "전체"),
-            tech_stacks=self.search_params.get("tech_stacks", []),
-            region=self.search_params.get("region", "전체")
-        )
+    # 필터링
+    all_jobs = FilterService.remove_expired(all_jobs)
+    all_jobs = FilterService.filter_jobs(
+        all_jobs,
+        keyword=keyword,
+        category=params.get("category", "전체"),
+        experience=params.get("experience", "전체"),
+        education=params.get("education", "전체"),
+        tech_stacks=params.get("tech_stacks", []),
+        location=params.get("location", "전체")
+    )
 
-        # 이메일 발송
-        if all_jobs:
-            success = MailService.send_jobs_email(all_jobs)
-            if success:
-                logger.info(f"이메일 발송 성공: {len(all_jobs)}건")
-            else:
-                logger.error("이메일 발송 실패")
-        else:
-            logger.info("수집된 공고가 없어 이메일을 발송하지 않습니다.")
+    # 이메일 발송
+    if all_jobs:
+        MailService.send_jobs_email(all_jobs)
 
-        # GUI 콜백
-        if self.callback:
-            self.callback(all_jobs)
+    if self.callback:
+        self.callback(all_jobs)
 
-        logger.info(f"=== 일일 크롤링 완료 ({len(all_jobs)}건) ===")
-
+    logger.info(f"=== 일일 크롤링 완료 ({len(all_jobs)}건) ===")
     def start(self):
         """스케줄러 시작"""
         if self.is_running:

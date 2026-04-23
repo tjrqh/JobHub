@@ -47,14 +47,14 @@ class JobKoreaCrawler(BaseCrawler):
             params.append(f"education={edu_map[edu]}")
 
         # 지역
-        region = filters.get("region", "전체")
-        region_map = {
+        location = filters.get("location", "전체")
+        location_map = {
             "서울": "I000", "경기": "B000", "인천": "H000",
             "부산": "C000", "대구": "F000", "광주": "D000",
             "대전": "G000", "울산": "E000", "세종": "S000"
         }
-        if region in region_map:
-            params.append(f"local={region_map[region]}")
+        if location in location_map:
+            params.append(f"local={location_map[location]}")
 
         param_str = "&".join(params)
         return f"{self.BASE_URL}/Search/?{param_str}"
