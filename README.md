@@ -60,39 +60,37 @@
 ---
 
 ## 🗂️ 프로젝트 구조
+```
 💼 pyc/
-├── 📄 main.py # 진입점
-├── 📄 config.py # 설정 파일
-├── 📄 .env # 환경변수 (이메일 등)
-├── 📄 requirements.txt # 패키지 목록
-├── 📄 crawler.log # 실행 로그 (자동 생성)
+├── 📄 main.py                  # 진입점
+├── 📄 config.py                # 설정 파일
+├── 📄 .env                     # 환경변수 (이메일 등)
+├── 📄 requirements.txt         # 패키지 목록
+├── 📄 crawler.log              # 실행 로그 (자동 생성)
 │
-├── 📁 crawlers/ # 크롤러 모듈
-│ ├── init.py
-│ ├── base_crawler.py # 크롤러 베이스 클래스
-│ ├── saramin_crawler.py # 사람인 크롤러
-│ ├── jobkorea_crawler.py # 잡코리아 크롤러
-│ └── wanted_crawler.py # 원티드 크롤러 (무한 스크롤)
+├── 📁 crawlers/                # 크롤러 모듈
+│   ├── __init__.py
+│   ├── base_crawler.py         # 크롤러 베이스 클래스
+│   ├── saramin_crawler.py      # 사람인 크롤러
+│   ├── jobkorea_crawler.py     # 잡코리아 크롤러
+│   └── wanted_crawler.py       # 원티드 크롤러 (무한 스크롤)
 │
-├── 📁 models/ # 데이터 모델
-│ └── job.py # JobPosting 데이터 클래스
+├── 📁 models/                  # 데이터 모델
+│   └── job.py                  # JobPosting 데이터 클래스
 │
-├── 📁 services/ # 비즈니스 로직
-│ ├── filter_service.py # 필터링 서비스
-│ └── mail_service.py # 이메일 발송 서비스
+├── 📁 services/                # 비즈니스 로직
+│   ├── filter_service.py       # 필터링 서비스
+│   └── mail_service.py         # 이메일 발송 서비스
 │
-├── 📁 scheduler/ # 스케줄러
-│ └── daily_scheduler.py # 일일 자동 수집 스케줄러
+├── 📁 scheduler/               # 스케줄러
+│   └── daily_scheduler.py      # 일일 자동 수집 스케줄러
 │
-├── 📁 gui/ # GUI
-│ └── app.py # tkinter 메인 앱
+├── 📁 gui/                     # GUI
+│   └── app.py                  # tkinter 메인 앱
 │
-└── 📁 utils/ # 유틸리티
-└── helpers.py # 헬퍼 함수
-
-text
-
-
+└── 📁 utils/                   # 유틸리티
+    └── helpers.py              # 헬퍼 함수
+```
 ---
 
 ## ⚙️ 설치 방법
