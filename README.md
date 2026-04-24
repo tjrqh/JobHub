@@ -208,47 +208,13 @@ EXPERIENCE_LEVELS = ["전체", "신입", "1년", "3년", "5년", "10년 이상"]
 
 # 🎓 학력 레벨
 EDUCATION_LEVELS = ["전체", "학력무관", "고졸", "대졸", "석사", "박사"]
-📊 수집 현황
-사이트	수집 방식	평균 수집량
-사람인	Selenium 페이지네이션	~500개
-잡코리아	Selenium 페이지네이션	~500개
-원티드	Selenium 무한 스크롤	~700개
-합계		~1,700개
-📝 로그
-실행 시 콘솔 및 crawler.log 파일에 로그가 저장됩니다:
-
-log
-
-2026-04-24 01:54:28 [INFO] crawlers.saramin_crawler: [사람인] 총 512개 수집 완료
-2026-04-24 01:54:29 [INFO] crawlers.jobkorea_crawler: [잡코리아] 총 487개 수집 완료
-2026-04-24 01:54:30 [INFO] crawlers.wanted_crawler: [원티드] 총 728개 수집 완료
-2026-04-24 01:54:30 [INFO] services.filter_service: 필터링 요약: 원본(1727) -> 필터통과(150) -> 중복제거최종(143)
 로그 레벨
 레벨	출력 대상
 INFO	크롤링 결과, 필터링 요약, 수집 건수
 WARNING	파싱 실패, 크롤러 경고
 ERROR	필터링 전체 실패, 이메일 발송 실패
 억제	selenium, urllib3 내부 디버그 로그
-🛠️ 트러블슈팅
-<details> <summary><b>Chrome 드라이버 오류</b></summary>
-Bash
 
-# webdriver-manager가 자동으로 드라이버를 다운로드 및 설치합니다
-pip install webdriver-manager
-</details><details> <summary><b>이메일 발송 실패</b></summary>
-Gmail 앱 비밀번호 사용 확인 (일반 비밀번호 X)
-.env 파일 설정 확인
-방화벽 / 보안 프로그램 확인
-앱 비밀번호 발급
-</details><details> <summary><b>공고가 0개로 필터링됨</b></summary>
-필터 조건 완화 (지역: 전체, 경력: 전체)
-키워드 단순화 (예: 백엔드 개발자 → 백엔드)
-crawler.log 파일에서 탈락 원인 확인
-</details><details> <summary><b>크롤링 속도가 느림</b></summary>
-config.py의 SCROLL_PAUSE 값 줄이기
-MAX_PAGES 값 줄이기
-수집 사이트 수 줄이기 (체크박스 해제)
-</details>
 ⚠️ 주의사항
 [!WARNING]
 
@@ -257,6 +223,8 @@ MAX_PAGES 값 줄이기
 과도한 크롤링은 IP 차단의 원인이 될 수 있습니다
 수집된 데이터는 개인적인 용도로만 사용하세요
 수집된 데이터의 저작권은 각 사이트에 있습니다
+
+
 📄 License
 This project is for personal use only.
 수집된 데이터의 저작권은 각 사이트에 있습니다.
