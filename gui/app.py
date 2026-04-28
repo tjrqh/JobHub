@@ -160,20 +160,22 @@ class App:
             "<Configure>",
             lambda e: self.result_canvas.configure(scrollregion=self.result_canvas.bbox("all"))
         )
-        self.result_canvas.create_window((0, 0), window=self.cards_frame, anchor="nw")
+        self.cards_window = self.result_canvas.create_window((0, 0), window=self.cards_frame, anchor="nw")
         self.result_canvas.configure(yscrollcommand=scrollbar.set)
+        self.result_canvas.bind(
+            "<Configure>",
+            lambda e: self.result_canvas.itemconfigure(self.cards_window, width=e.width)
+        )
         self.result_canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        # ✅ 결과 영역에 마우스가 들어올 때만 스크롤 활성화, 나갈 때 비활성화
-        self.result_canvas.bind("<Enter>", self._bind_mousewheel)
-        self.result_canvas.bind("<Leave>", self._unbind_mousewheel)
+        self._bind_mousewheel()
 
     # ==================================================
     #  마우스 휠 스크롤 (결과 영역 한정)
     # ==================================================
     def _bind_mousewheel(self, event=None):
-        """결과 영역에 마우스 진입 시 전역 스크롤 등록"""
+        """결과 영역 스크롤 등록"""
         self.result_canvas.bind_all("<MouseWheel>", self._on_mousewheel)  # Windows / macOS
         self.result_canvas.bind_all("<Button-4>", self._on_mousewheel)    # Linux 스크롤 업
         self.result_canvas.bind_all("<Button-5>", self._on_mousewheel)    # Linux 스크롤 다운
@@ -185,6 +187,9 @@ class App:
         self.result_canvas.unbind_all("<Button-5>")
 
     def _on_mousewheel(self, event):
+        if not self._is_pointer_over_results():
+            return
+
         if event.num == 4:          # Linux 업
             self.result_canvas.yview_scroll(-1, "units")
         elif event.num == 5:        # Linux 다운
@@ -193,6 +198,16 @@ class App:
             self.result_canvas.yview_scroll(int(-1 * event.delta), "units")
         else:                                 # Windows: delta가 120 단위
             self.result_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        self._load_more_if_needed()
+
+    def _is_pointer_over_results(self) -> bool:
+        x, y = self.root.winfo_pointerxy()
+        widget = self.root.winfo_containing(x, y)
+        while widget:
+            if widget in (self.result_canvas, self.cards_frame):
+                return True
+            widget = getattr(widget, "master", None)
+        return False
 
     def _build_status_bar(self):
         status_frame = ttk.Frame(self.root, padding=(10, 3))
@@ -264,6 +279,8 @@ class App:
 
     def _display_cards(self, jobs: List[JobPosting]):
         self._clear_cards()
+        self.current_page = 0
+        self.rendered_count = 0
 
         if not jobs:
             ttk.Label(self.cards_frame, text="😢 검색 결과가 없습니다.", font=("Helvetica", 16)).pack(pady=50)
@@ -396,3 +413,12 @@ class App:
             if isinstance(widget, ttk.Button) and widget.cget("text") == "⬇️ 더 보기":
                 widget.destroy()
         self._render_next_page()
+
+    def _load_more_if_needed(self):
+        if self.rendered_count >= len(self.filtered_jobs):
+            return
+        try:
+            if self.result_canvas.yview()[1] >= 0.92:
+                self._load_more()
+        except Exception:
+            pass

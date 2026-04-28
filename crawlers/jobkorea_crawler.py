@@ -1,3 +1,4 @@
+import re
 import time
 import logging
 from typing import List
@@ -28,33 +29,20 @@ class JobKoreaCrawler(BaseCrawler):
         if keyword:
             params.append(f"stext={quote_plus(keyword)}")
 
-        # 경력
+        # 잡코리아 신규 검색 화면에서 현재 URL로 안정적으로 동작하는 필터만 붙인다.
+        # 지역/학력/직종은 URL 파라미터가 바뀌어 무효 검색이 되기 쉬워 수집 후 내부 필터로 처리한다.
         exp = filters.get("experience", "전체")
         exp_map = {
-            "신입": "1", "1년": "2", "2년": "2",
-            "3년": "3", "5년": "5", "7년": "7", "10년 이상": "10"
+            "신입": "1",
+            "1년": "2",
+            "2년": "2",
+            "3년": "2",
+            "5년": "2",
+            "7년": "2",
+            "10년 이상": "2",
         }
         if exp in exp_map:
             params.append(f"careerType={exp_map[exp]}")
-
-        # 학력
-        edu = filters.get("education", "전체")
-        edu_map = {
-            "학력무관": "0", "고졸": "1", "초대졸": "2",
-            "대졸": "3", "석사": "4", "박사": "5"
-        }
-        if edu in edu_map:
-            params.append(f"education={edu_map[edu]}")
-
-        # 지역
-        location = filters.get("location", "전체")
-        location_map = {
-            "서울": "I000", "경기": "B000", "인천": "H000",
-            "부산": "C000", "대구": "F000", "광주": "D000",
-            "대전": "G000", "울산": "E000", "세종": "S000"
-        }
-        if location in location_map:
-            params.append(f"local={location_map[location]}")
 
         param_str = "&".join(params)
         return f"{self.BASE_URL}/Search/?{param_str}"
@@ -81,9 +69,9 @@ class JobKoreaCrawler(BaseCrawler):
                 # 공고 목록
                 items = self.wait_for_elements(
                     By.CSS_SELECTOR,
-                    ".recruit-info .list-default .list-post, "
-                    ".list-default .list-post, "
-                    ".post-list-info .post-list-corp",
+                    "div[data-sentry-component='CardJob'], "
+                    "a[data-sentry-component='Title'][href*='/Recruit/GI_Read/'], "
+                    "a[href*='/Recruit/GI_Read/']",
                     timeout=10
                 )
 
@@ -99,10 +87,12 @@ class JobKoreaCrawler(BaseCrawler):
                     logger.info(f"[잡코리아] 페이지 {page}: 결과 없음")
                     break
 
+                seen_urls = set()
                 for item in items:
                     try:
                         job = self._parse_item(item)
-                        if job and not job.is_expired():
+                        if job and job.url not in seen_urls and not job.is_expired():
+                            seen_urls.add(job.url)
                             jobs.append(job)
                     except Exception as e:
                         logger.debug(f"[잡코리아] 파싱 에러: {e}")
@@ -157,17 +147,25 @@ class JobKoreaCrawler(BaseCrawler):
 
     def _parse_item(self, item) -> JobPosting:
         """개별 공고 파싱"""
+        card = self._normalize_card(item)
+
         # 제목
         title_selectors = [
+            "a[data-sentry-component='Title'] span",
+            "a[data-sentry-component='Title']",
+            "a[href*='/Recruit/GI_Read/'] span[class*='text-typo-b1']",
+            "a[href*='/Recruit/GI_Read/'] span",
             ".post-list-info a.title", ".list-section-title a",
             "a.title", ".title a", "h3 a", ".tit_job a"
         ]
         title = ""
         url = ""
         for sel in title_selectors:
-            title = self.safe_get_text(item, sel)
+            title = self.safe_get_text(card, sel)
             if title:
-                url = self.safe_get_attribute(item, sel, "href")
+                url = self.safe_get_attribute(card, sel, "href")
+                if not url:
+                    url = self._find_job_url(card)
                 break
 
         if not title:
@@ -178,47 +176,58 @@ class JobKoreaCrawler(BaseCrawler):
 
         # 회사명
         company_selectors = [
+            "a[href*='/Recruit/GI_Read/'] span[class*='text-gray700']",
             ".post-list-corp a.name", ".corp-name a",
             "a.name", ".name a", ".corp_name"
         ]
         company = ""
         for sel in company_selectors:
-            company = self.safe_get_text(item, sel)
-            if company:
+            company = self.safe_get_text(card, sel)
+            if company and company != title:
                 break
 
         # 조건
         option_selectors = [
+            "div[data-sentry-component='GrayChip']",
             ".post-list-info .option", ".etc", ".info-detail",
             ".option span", ".chip-information-group"
         ]
         location = ""
         experience = ""
         education = ""
+        description_parts = []
 
         for sel in option_selectors:
             try:
-                spans = item.find_elements(By.CSS_SELECTOR, f"{sel} span, {sel} p")
+                spans = card.find_elements(By.CSS_SELECTOR, f"{sel} span, {sel} p")
                 texts = [s.text.strip() for s in spans if s.text.strip()]
                 if texts:
                     for t in texts:
+                        description_parts.append(t)
                         if any(loc in t for loc in ["서울", "경기", "부산", "대구", "인천",
-                                                      "광주", "대전", "울산", "세종", "강원"]):
+                                                      "광주", "대전", "울산", "세종", "강원",
+                                                      "충북", "충남", "전북", "전남", "경북",
+                                                      "경남", "제주"]):
                             location = t
                         elif any(e in t for e in ["신입", "경력", "년"]):
                             experience = t
                         elif any(e in t for e in ["대졸", "고졸", "석사", "박사", "학력"]):
                             education = t
-                    break
             except Exception:
                 continue
 
+        if not experience:
+            experience = self._first_text_by_xpath(
+                card,
+                ".//span[contains(., '경력') or contains(., '신입') or contains(., '년↑') or contains(., '년 이상')]"
+            )
+
         # 마감일
-        deadline_selectors = [".date", ".deadline", ".end-date"]
+        deadline_selectors = [".date", ".deadline", ".end-date", "span[class*='text-gray500']"]
         deadline = ""
         for sel in deadline_selectors:
-            deadline = self.safe_get_text(item, sel)
-            if deadline:
+            deadline = self.safe_get_text(card, sel)
+            if deadline and re.search(r"마감|상시|채용시|\d{1,2}[./]\d{1,2}", deadline):
                 break
 
         return JobPosting(
@@ -229,5 +238,33 @@ class JobKoreaCrawler(BaseCrawler):
             location=location,
             experience=experience,
             education=education,
-            deadline=deadline
+            deadline=deadline,
+            description=", ".join(dict.fromkeys(description_parts))
         )
+
+    def _normalize_card(self, item):
+        """링크가 잡힌 경우 실제 공고 카드 컨테이너로 올려 보낸다."""
+        try:
+            component = item.get_attribute("data-sentry-component")
+            if component == "CardJob":
+                return item
+            return item.find_element(
+                By.XPATH,
+                "./ancestor::div[@data-sentry-component='CardJob'][1]"
+            )
+        except Exception:
+            return item
+
+    def _find_job_url(self, card) -> str:
+        try:
+            link = card.find_element(By.CSS_SELECTOR, "a[href*='/Recruit/GI_Read/']")
+            return link.get_attribute("href") or ""
+        except Exception:
+            return ""
+
+    def _first_text_by_xpath(self, element, xpath: str) -> str:
+        try:
+            found = element.find_element(By.XPATH, xpath)
+            return found.text.strip()
+        except Exception:
+            return ""
