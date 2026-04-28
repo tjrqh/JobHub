@@ -1,230 +1,183 @@
-# 💼 취업 공고 자동 수집기
+# JobHub
 
-<div align="center">
+구직 공고를 여러 채용 플랫폼에서 수집하고, 조건에 맞는 공고를 한 화면에서 확인할 수 있는 Python 데스크탑 애플리케이션입니다.
 
-**사람인 · 잡코리아 · 원티드 채용 공고 자동 수집 데스크탑 애플리케이션**
+사람인, 잡코리아, 원티드의 채용 공고를 Selenium 기반 크롤러로 수집하고, 키워드/직종/경력/학력/지역/기술스택 기준으로 필터링합니다. 검색 결과는 tkinter GUI에서 카드 형태로 확인할 수 있으며, 필요한 경우 이메일로 발송할 수 있습니다.
 
-![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Selenium](https://img.shields.io/badge/Selenium-4.x-43B02A?style=for-the-badge&logo=selenium&logoColor=white)
-![Chrome](https://img.shields.io/badge/Chrome-Driver-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)
-![tkinter](https://img.shields.io/badge/GUI-tkinter-FF6F00?style=for-the-badge&logo=python&logoColor=white)
+## 주요 기능
 
-</div>
+- 사람인, 잡코리아, 원티드 채용 공고 수집
+- 키워드, 직종, 경력, 학력, 지역, 기술스택 필터
+- 회사명과 공고 제목 기준 중복 제거
+- 검색 결과 카드 UI 제공
+- 결과 정렬: 최신순, 회사명순, 사이트순
+- 결과 목록 스크롤 및 추가 로딩
+- HTML 이메일 발송
+- 수집/필터링/발송 로그 기록
 
----
+## 기술 스택
 
-## 📖 목차
+| 영역 | 기술 |
+| --- | --- |
+| Language | Python 3.11+ |
+| Crawling | Selenium, webdriver-manager |
+| GUI | tkinter, ttk |
+| Email | smtplib, MIMEText |
+| Scheduling | schedule |
+| Config | python-dotenv |
 
-- [주요 기능](#-주요-기능)
-- [프로젝트 구조](#-프로젝트-구조)
-- [설치 방법](#-설치-방법)
-- [실행 방법](#-실행-방법)
-- [사용 방법](#-사용-방법)
-- [설정](#-설정)
-- [수집 현황](#-수집-현황)
-- [로그](#-로그)
-- [트러블슈팅](#-트러블슈팅)
-- [주의사항](#-주의사항)
+## 프로젝트 구조
 
----
-
-## ✨ 주요 기능
-
-<table>
-  <tr>
-    <td>🔍 <b>멀티 사이트 크롤링</b></td>
-    <td>사람인, 잡코리아, 원티드 동시 수집</td>
-  </tr>
-  <tr>
-    <td>🎯 <b>다양한 필터링</b></td>
-    <td>키워드, 직종, 경력, 학력, 지역, 기술스택</td>
-  </tr>
-  <tr>
-    <td>🔄 <b>중복 제거</b></td>
-    <td>회사명 + 공고 제목 기준 자동 중복 제거</td>
-  </tr>
-  <tr>
-    <td>📧 <b>이메일 자동 발송</b></td>
-    <td>수집된 공고를 HTML 형식으로 이메일 발송</td>
-  </tr>
-  <tr>
-    <td>⏰ <b>자동 스케줄링</b></td>
-    <td>매일 지정한 시간에 자동 수집 및 발송</td>
-  </tr>
-  <tr>
-    <td>🖥️ <b>GUI 인터페이스</b></td>
-    <td>tkinter 기반 데스크탑 UI</td>
-  </tr>
-</table>
-
----
-
-## 🗂️ 프로젝트 구조
+```text
+JobHub/
+├── main.py                      # 애플리케이션 진입점
+├── config.py                    # 크롤링, 필터, 이메일 설정
+├── requirements.txt             # pip 의존성
+├── pyproject.toml               # 프로젝트 메타데이터
+├── crawler.log                  # 실행 로그
+├── crawlers/
+│   ├── base_crawler.py          # Selenium 공통 크롤러
+│   ├── saramin_crawler.py       # 사람인 크롤러
+│   ├── jobkorea_crawler.py      # 잡코리아 크롤러
+│   └── wanted_crawler.py        # 원티드 크롤러
+├── gui/
+│   └── app.py                   # tkinter GUI
+├── models/
+│   └── job.py                   # 채용 공고 데이터 모델
+├── services/
+│   ├── filter_service.py        # 필터링/중복 제거
+│   └── mail_service.py          # 이메일 발송
+├── scheduler/
+│   └── daily_scheduler.py       # 일일 실행 스케줄러
+└── utils/
+    └── helpers.py               # 표시명/색상 등 유틸리티
 ```
-💼 pyc/
-├── 📄 main.py                  # 진입점
-├── 📄 config.py                # 설정 파일
-├── 📄 .env                     # 환경변수 (이메일 등)
-├── 📄 requirements.txt         # 패키지 목록
-├── 📄 crawler.log              # 실행 로그 (자동 생성)
-│
-├── 📁 crawlers/                # 크롤러 모듈
-│   ├── __init__.py
-│   ├── base_crawler.py         # 크롤러 베이스 클래스
-│   ├── saramin_crawler.py      # 사람인 크롤러
-│   ├── jobkorea_crawler.py     # 잡코리아 크롤러
-│   └── wanted_crawler.py       # 원티드 크롤러 (무한 스크롤)
-│
-├── 📁 models/                  # 데이터 모델
-│   └── job.py                  # JobPosting 데이터 클래스
-│
-├── 📁 services/                # 비즈니스 로직
-│   ├── filter_service.py       # 필터링 서비스
-│   └── mail_service.py         # 이메일 발송 서비스
-│
-├── 📁 scheduler/               # 스케줄러
-│   └── daily_scheduler.py      # 일일 자동 수집 스케줄러
-│
-├── 📁 gui/                     # GUI
-│   └── app.py                  # tkinter 메인 앱
-│
-└── 📁 utils/                   # 유틸리티
-    └── helpers.py              # 헬퍼 함수
-```
----
 
-## ⚙️ 설치 방법
+## 설치
 
-### 요구사항
-
-- Python `3.12` 이상
-- Google Chrome 브라우저
-
-### Step 1. 저장소 클론
+### 1. 저장소 클론
 
 ```bash
-git clone https://github.com/your-repo/job-crawler.git
-cd job-crawler
-Step 2. 가상환경 생성
-Bash
+git clone https://github.com/tjrqh/JobHub.git
+cd JobHub
+```
 
-python -m venv venv
-Bash
+### 2. 가상환경 생성 및 활성화
 
-# macOS / Linux
-source venv/bin/activate
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
 
-# Windows
-venv\Scripts\activate
-Step 3. 패키지 설치
-Bash
+Windows에서는 다음 명령을 사용합니다.
 
+```bash
+.venv\Scripts\activate
+```
+
+### 3. 의존성 설치
+
+```bash
 pip install -r requirements.txt
-txt
+```
 
-# requirements.txt
-selenium
-webdriver-manager
-python-dotenv
-schedule
-Step 4. 환경변수 설정
-프로젝트 루트에 .env 파일 생성:
+### 4. 환경변수 설정
 
-env
+프로젝트 루트에 `.env` 파일을 생성합니다.
 
-# .env
+```env
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+EMAIL_SENDER=your_email@gmail.com
+EMAIL_PASSWORD=your_app_password
+EMAIL_RECEIVER=receiver@gmail.com
+```
 
-# 발신자 이메일
-MAIL_SENDER=your_email@gmail.com
+Gmail을 사용하는 경우 일반 계정 비밀번호가 아니라 앱 비밀번호가 필요합니다.
 
-# Gmail 앱 비밀번호 (계정 비밀번호 X)
-MAIL_PASSWORD=your_app_password
+## 실행
 
-# 수신자 이메일
-MAIL_RECEIVER=receiver@gmail.com
-
-# SMTP 설정
-MAIL_SMTP=smtp.gmail.com
-MAIL_PORT=587
-[!IMPORTANT]
-Gmail 사용 시 앱 비밀번호를 사용해야 합니다.
-일반 계정 비밀번호로는 발송이 되지 않습니다.
-👉 Google 앱 비밀번호 설정
-
-🚀 실행 방법
-Bash
-
+```bash
 python main.py
-[!NOTE]
-실행 시 Chrome 브라우저가 자동으로 열리며 크롤링이 시작됩니다.
-ChromeDriver는 webdriver-manager가 자동으로 설치합니다.
+```
 
-🖥️ 사용 방법
-1️⃣ 기본 검색
-키워드 입력 (예: Python, 백엔드, 신입)
-수집할 사이트 체크 (사람인 / 잡코리아 / 원티드)
-🔍 검색 버튼 클릭 또는 Enter
-2️⃣ 필터 설정
-필터	설명	예시
-직종	모집 직종 필터	개발, 디자인, 기획
-경력	경력 조건 필터	신입, 1년, 3년, 5년
-학력	학력 조건 필터	학력무관, 대졸, 석사
-지역	근무 지역 필터	서울, 경기, 부산
-기술스택	사용 기술 필터	Python, Java, React
-3️⃣ 결과 정렬
-정렬	기준
-최신순	수집 시간 기준 (기본값)
-회사명순	가나다 순
-사이트순	수집 사이트 기준
-4️⃣ 이메일 발송
-검색 완료 후 📧 메일 발송 클릭
-.env에 설정된 수신자 이메일로 HTML 형식 발송
-5️⃣ 자동 스케줄링
-매일 자동 발송 체크박스 활성화
-config.py의 DAILY_SEND_TIME에 설정된 시간에 자동 수집 및 발송
-🔧 설정
-config.py에서 주요 설정을 변경할 수 있습니다:
+실행하면 tkinter 기반 데스크탑 앱이 열립니다. ChromeDriver는 `webdriver-manager`가 로컬 Chrome 버전에 맞춰 자동으로 준비합니다.
 
-Python
+## 사용 방법
 
-# ⏱️ 크롤링 설정
-MAX_PAGES = 5               # 최대 크롤링 페이지 수
-SCROLL_PAUSE = 2            # 무한 스크롤 대기 시간 (초)
+1. 키워드를 입력합니다. 예: `Python`, `백엔드`, `신입`, `React`
+2. 수집할 사이트를 선택합니다.
+3. 직종, 경력, 학력, 지역, 기술스택 필터를 선택합니다.
+4. `검색` 버튼을 누르거나 Enter를 입력합니다.
+5. 결과 카드에서 공고 제목 또는 `공고 보기` 버튼을 눌러 원문 페이지로 이동합니다.
+6. 필요하면 `메일 발송` 버튼으로 검색 결과를 이메일로 보냅니다.
 
-# ⏰ 스케줄러 설정
-DAILY_SEND_TIME = "09:00"   # 자동 발송 시간
+## 크롤러 동작 방식
 
-# 🛠️ 기술스택 목록
-TECH_STACKS = [
-    "Python", "Java", "React", "Node.js",
-    "Spring", "Django", "Vue", "Kotlin", ...
-]
+### 사람인
 
-# 📍 지역 목록
-LOCATIONS = ["전체", "서울", "경기", "부산", "대구", ...]
+사람인 검색 페이지의 공고 목록을 페이지 단위로 순회하며 제목, 회사명, 지역, 경력, 학력, 마감일, 기술스택 정보를 수집합니다.
 
-# 💼 경력 레벨
-EXPERIENCE_LEVELS = ["전체", "신입", "1년", "3년", "5년", "10년 이상"]
+### 잡코리아
 
-# 🎓 학력 레벨
-EDUCATION_LEVELS = ["전체", "학력무관", "고졸", "대졸", "석사", "박사"]
-로그 레벨
-레벨	출력 대상
-INFO	크롤링 결과, 필터링 요약, 수집 건수
-WARNING	파싱 실패, 크롤러 경고
-ERROR	필터링 전체 실패, 이메일 발송 실패
-억제	selenium, urllib3 내부 디버그 로그
+잡코리아의 최신 검색 화면 구조에 맞춰 `CardJob` 기반 공고 카드를 탐색합니다. 검색 URL에서 안정적으로 동작하는 조건만 적용하고, 지역/학력/기술스택 등은 수집 이후 내부 필터에서 처리합니다.
 
-⚠️ 주의사항
-[!WARNING]
+### 원티드
 
-크롤링 시 Chrome 브라우저가 자동 실행됩니다
-사이트 정책에 따라 크롤링이 일시적으로 차단될 수 있습니다
-과도한 크롤링은 IP 차단의 원인이 될 수 있습니다
-수집된 데이터는 개인적인 용도로만 사용하세요
-수집된 데이터의 저작권은 각 사이트에 있습니다
+원티드는 무한 스크롤 방식의 목록을 처리합니다. 페이지 하단으로 스크롤하며 추가 공고를 로드한 뒤 카드 정보를 파싱합니다.
 
+## 설정
 
-📄 License
-This project is for personal use only.
-수집된 데이터의 저작권은 각 사이트에 있습니다.
+주요 설정은 `config.py`에서 관리합니다.
+
+```python
+CHROME_HEADLESS = True
+PAGE_LOAD_TIMEOUT = 15
+MAX_PAGES = 5
+SCROLL_PAUSE = 2
+DAILY_SEND_TIME = "09:00"
+```
+
+필터 옵션도 `config.py`에서 확장할 수 있습니다.
+
+- `JOB_CATEGORIES`
+- `EXPERIENCE_LEVELS`
+- `EDUCATION_LEVELS`
+- `TECH_STACKS`
+- `LOCATIONS`
+
+## 로그
+
+실행 로그는 콘솔과 `crawler.log`에 동시에 기록됩니다.
+
+- 크롤링 시작/완료
+- 사이트별 수집 건수
+- 필터링 결과
+- 파싱 실패
+- 이메일 발송 성공/실패
+
+## 트러블슈팅
+
+### ChromeDriver 실행 오류
+
+Chrome이 설치되어 있는지 확인하고, Chrome 버전이 정상적으로 감지되는지 확인합니다. macOS에서 처음 실행한 드라이버가 차단되는 경우 보안 설정에서 실행 허용이 필요할 수 있습니다.
+
+### 검색 결과가 없는 경우
+
+채용 사이트의 검색 URL, DOM 구조, 차단 정책이 바뀌었을 수 있습니다. 각 크롤러의 셀렉터와 URL 파라미터를 확인해야 합니다.
+
+### 이메일 발송 실패
+
+`.env`의 `EMAIL_SENDER`, `EMAIL_PASSWORD`, `EMAIL_RECEIVER` 값을 확인합니다. Gmail은 앱 비밀번호를 사용해야 합니다.
+
+## 개발 포인트
+
+- 사이트별 DOM 구조가 달라 크롤러를 개별 클래스로 분리했습니다.
+- 공통 Selenium 동작은 `BaseCrawler`에서 관리합니다.
+- 수집 데이터는 `JobPosting` 모델로 표준화해 GUI, 필터링, 이메일 발송에서 같은 구조를 사용합니다.
+- GUI와 크롤링 작업을 분리하기 위해 검색은 백그라운드 스레드에서 실행합니다.
+- 채용 사이트 구조 변경에 대응할 수 있도록 다중 셀렉터와 안전한 파싱 로직을 사용합니다.
+
+## 주의사항
+
+이 프로젝트는 개인 학습 및 포트폴리오 목적의 프로젝트입니다. 수집한 데이터의 저작권은 각 채용 플랫폼과 원 게시자에게 있으며, 과도한 요청은 서비스 이용 제한 또는 차단의 원인이 될 수 있습니다.
